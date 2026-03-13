@@ -605,13 +605,28 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
   const [customType, setCustomType] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<Record<string, { status: 'P' | 'A' | 'OD', reason?: string }>>({});
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [existingAttendanceMessage, setExistingAttendanceMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { batches } = useBatches(token);
   const { departments } = useDepartments(token);
 
+  useEffect(() => {
+    console.log("Attendance state changed:", attendance);
+  }, [attendance]);
+
   const fetchStudents = async () => {
     setLoading(true);
     try {
+      const type = config.type === 'Others' ? customType : config.type;
+      const date = new Date().toISOString().split('T')[0];
+      console.log("Fetching students, checking attendance:", { type, batch: config.batch, department: config.department, date });
+      const checkRes = await fetch(`/api/attendance/session/check?type=${encodeURIComponent(type)}&batch=${config.batch}&department=${encodeURIComponent(config.department)}&date=${date}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const checkData = await checkRes.json();
+      console.log("Check data:", checkData);
+      
       const res = await fetch(`/api/students?batch=${config.batch}&department=${encodeURIComponent(config.department)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -622,15 +637,28 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
       const data = await res.json();
       if (Array.isArray(data)) {
         setStudents(data);
-        // Initialize attendance as empty
-        const initial: Record<string, { status: 'P' | 'A' | 'OD', reason?: string }> = {};
-        setAttendance(initial);
+        console.log("Check data exists:", checkData.exists);
+        if (checkData.exists) {
+          setSessionId(checkData.sessionId);
+          setExistingAttendanceMessage('Attendance already exists for today. You can edit and update it.');
+          const initial: Record<string, { status: 'P' | 'A' | 'OD', reason?: string }> = {};
+          checkData.records.forEach((r: any) => {
+            initial[r.studentId] = { status: r.status, reason: r.reason };
+          });
+          console.log("Setting initial attendance:", initial);
+          setAttendance(initial);
+        } else {
+          setSessionId(null);
+          setExistingAttendanceMessage(null);
+          setAttendance({});
+        }
       } else {
         console.error('Students API did not return an array', data);
         setStudents([]);
       }
       setStep(2);
     } catch (err) {
+      console.error("Error in fetchStudents:", err);
       alert('Failed to fetch students');
     } finally {
       setLoading(false);
@@ -658,7 +686,8 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
         body: JSON.stringify({ 
           ...config, 
           type: config.type === 'Others' ? customType : config.type,
-          records 
+          records,
+          sessionId
         }),
       });
       if (res.ok) {
@@ -666,6 +695,7 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
         setStep(1);
         setConfig({ batch: '', department: '', type: '' });
         setCustomType('');
+        setSessionId(null);
       } else {
         alert('Failed to save attendance');
       }
@@ -762,6 +792,11 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
         </div>
       ) : (
         <div className="space-y-4">
+          {existingAttendanceMessage && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm font-medium">
+              {existingAttendanceMessage}
+            </div>
+          )}
           <div className="bg-white rounded-3xl shadow-sm border border-[#5A5A40]/10 overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead className="bg-[#F5F5F0]">

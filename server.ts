@@ -328,21 +328,71 @@ app.post("/api/students/bulk", authenticate, isAdmin, upload.single("file"), asy
 });
 
 // Attendance Routes
-app.post("/api/attendance/session", authenticate, isAdmin, async (req, res) => {
-  const { type, batch, department, records } = req.body;
+app.get("/api/attendance/session/check", authenticate, async (req, res) => {
+  const { type, batch, department, date } = req.query;
+  console.log("Checking attendance:", { type, batch, department, date });
   try {
-    const session = new AttendanceSession({ type, batch, department, createdBy: (req as any).user.id });
-    await session.save();
-
-    const attendanceRecords = records.map((r: any) => ({
-      sessionId: session._id,
-      studentId: r.studentId,
-      status: r.status,
-      reason: r.reason
-    }));
-    await AttendanceRecord.insertMany(attendanceRecords);
-    res.json({ message: "Attendance marked successfully" });
+    const start = new Date(date as string);
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(date as string);
+    end.setUTCHours(23, 59, 59, 999);
+    
+    const session = await AttendanceSession.findOne({
+      type,
+      batch,
+      department,
+      date: { $gte: start, $lte: end }
+    });
+    
+    console.log("Found session:", session);
+    if (session) {
+      console.log("Session date:", session.date);
+    }
+    if (!session) return res.json({ exists: false });
+    
+    const records = await AttendanceRecord.find({ sessionId: session._id });
+    console.log("Found records:", records.length);
+    res.json({ exists: true, sessionId: session._id, records });
   } catch (err) {
+    console.error("Error checking attendance:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/api/attendance/session", authenticate, isAdmin, async (req, res) => {
+  const { type, batch, department, records, sessionId } = req.body;
+  console.log("Submitting attendance:", { type, batch, department, sessionId, recordsCount: records.length });
+  try {
+    if (sessionId) {
+      // Update existing
+      console.log("Updating existing session:", sessionId);
+      await AttendanceRecord.deleteMany({ sessionId });
+      const attendanceRecords = records.map((r: any) => ({
+        sessionId,
+        studentId: r.studentId,
+        status: r.status,
+        reason: r.reason
+      }));
+      await AttendanceRecord.insertMany(attendanceRecords);
+      res.json({ message: "Attendance updated successfully" });
+    } else {
+      // Create new
+      console.log("Creating new session");
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const session = new AttendanceSession({ type, batch, department, date: today, createdBy: (req as any).user.id });
+      await session.save();
+      const attendanceRecords = records.map((r: any) => ({
+        sessionId: session._id,
+        studentId: r.studentId,
+        status: r.status,
+        reason: r.reason
+      }));
+      await AttendanceRecord.insertMany(attendanceRecords);
+      res.json({ message: "Attendance marked successfully" });
+    }
+  } catch (err) {
+    console.error("Error marking attendance:", err);
     res.status(500).json({ error: "Error marking attendance" });
   }
 });
@@ -678,6 +728,36 @@ app.get("/api/stats", authenticate, async (req, res) => {
     }
 
     res.json({ totalStudents, attendancePercentage, presentCount, absentCount, odCount });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/api/stats/department", authenticate, isAdmin, async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const sessionFilter: any = { date: { $gte: today, $lt: tomorrow } };
+    const todaySessions = await AttendanceSession.find(sessionFilter);
+    
+    const departmentStats: any = {};
+    
+    for (const session of todaySessions) {
+      const dept = session.department;
+      if (!departmentStats[dept]) {
+        departmentStats[dept] = { present: 0, absent: 0, od: 0 };
+      }
+      
+      const records = await AttendanceRecord.find({ sessionId: session._id });
+      departmentStats[dept].present += records.filter(r => r.status === "P").length;
+      departmentStats[dept].absent += records.filter(r => r.status === "A").length;
+      departmentStats[dept].od += records.filter(r => r.status === "OD").length;
+    }
+    
+    res.json(departmentStats);
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
