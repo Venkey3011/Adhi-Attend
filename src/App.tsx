@@ -347,6 +347,7 @@ function NavItem({ active, onClick, icon, label }: { active: boolean, onClick: (
 function Dashboard({ user, setView, token }: { user: User | null, setView: (v: any) => void, token: string | null }) {
   const [stats, setStats] = useState({ totalStudents: 0, attendancePercentage: 0, presentCount: 0, absentCount: 0 });
   const [analytics, setAnalytics] = useState<any[]>([]);
+  const [deptStats, setDeptStats] = useState<Record<string, { present: number, absent: number, od: number }>>({});
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
 
   useEffect(() => {
@@ -386,9 +387,25 @@ function Dashboard({ user, setView, token }: { user: User | null, setView: (v: a
       }
     };
 
+    const fetchDeptStats = async () => {
+      if (user?.role !== 'admin') return;
+      try {
+        const res = await fetch('/api/stats/department', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDeptStats(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch department stats', err);
+      }
+    };
+
     fetchStats();
     fetchAnalytics();
-  }, [token]);
+    fetchDeptStats();
+  }, [token, user]);
 
   return (
     <motion.div 
@@ -429,50 +446,44 @@ function Dashboard({ user, setView, token }: { user: User | null, setView: (v: a
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#5A5A40]/10">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <Plus className="w-5 h-5 text-[#5A5A40]" />
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            {user?.role === 'admin' && (
-              <>
-                <ActionButton 
-                  onClick={() => setView('mark')}
-                  icon={<ClipboardCheck className="w-6 h-6" />}
-                  label="Mark New"
-                  sub="Attendance"
-                />
-                <ActionButton 
-                  onClick={() => setView('students')}
-                  icon={<UserPlus className="w-6 h-6" />}
-                  label="Add Student"
-                  sub="Manual Entry"
-                />
-                <ActionButton 
-                  onClick={() => setView('faculty')}
-                  icon={<Users className="w-6 h-6" />}
-                  label="Add Faculty"
-                  sub="System Access"
-                />
-              </>
-            )}
-            <ActionButton 
-              onClick={() => setView('reports')}
-              icon={<Download className="w-6 h-6" />}
-              label="Export Data"
-              sub="Excel Format"
-            />
-            <ActionButton 
-              onClick={() => {}}
-              icon={<Calendar className="w-6 h-6" />}
-              label="Schedule"
-              sub="View Calendar"
-            />
-          </div>
+      <div className="bg-white p-4 rounded-3xl shadow-sm border border-[#5A5A40]/10 mb-8">
+        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <Plus className="w-5 h-5 text-[#5A5A40]" />
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {user?.role === 'admin' && (
+            <>
+              <ActionButton 
+                onClick={() => setView('mark')}
+                icon={<ClipboardCheck className="w-5 h-5" />}
+                label="Mark New"
+                sub="Attendance"
+              />
+              <ActionButton 
+                onClick={() => setView('students')}
+                icon={<UserPlus className="w-5 h-5" />}
+                label="Add Student"
+                sub="Manual Entry"
+              />
+              <ActionButton 
+                onClick={() => setView('faculty')}
+                icon={<Users className="w-5 h-5" />}
+                label="Add Faculty"
+                sub="System Access"
+              />
+            </>
+          )}
+          <ActionButton 
+            onClick={() => setView('reports')}
+            icon={<Download className="w-5 h-5" />}
+            label="Export Data"
+            sub="Excel Format"
+          />
         </div>
+      </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#5A5A40]/10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold flex items-center gap-2">
@@ -533,6 +544,27 @@ function Dashboard({ user, setView, token }: { user: User | null, setView: (v: a
             )}
           </div>
         </div>
+
+        {user?.role === 'admin' && (
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#5A5A40]/10">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <LayoutDashboard className="w-5 h-5 text-[#5A5A40]" />
+              Department-wise Attendance
+            </h2>
+            <div className="space-y-4">
+              {Object.entries(deptStats).map(([dept, stats]) => (
+                <div key={dept} className="flex items-center justify-between p-4 bg-[#F5F5F0] rounded-2xl">
+                  <span className="font-bold">{dept}</span>
+                  <div className="flex gap-4 text-sm">
+                    <span className="text-emerald-600">P: {stats.present}</span>
+                    <span className="text-red-600">A: {stats.absent}</span>
+                    <span className="text-yellow-600">OD: {stats.od}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );
