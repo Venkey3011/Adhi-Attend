@@ -622,11 +622,8 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
       const data = await res.json();
       if (Array.isArray(data)) {
         setStudents(data);
-        // Initialize attendance
+        // Initialize attendance as empty
         const initial: Record<string, { status: 'P' | 'A' | 'OD', reason?: string }> = {};
-        data.forEach((s: Student) => {
-          initial[s._id] = { status: 'P' };
-        });
         setAttendance(initial);
       } else {
         console.error('Students API did not return an array', data);
@@ -642,11 +639,14 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
 
   const submitAttendance = async () => {
     setLoading(true);
-    const records = Object.entries(attendance).map(([id, val]) => ({
-      studentId: id,
-      status: (val as { status: string }).status,
-      reason: (val as { reason?: string }).reason
-    }));
+    const records = students.map(s => {
+      const val = attendance[s._id];
+      return {
+        studentId: s._id,
+        status: val?.status || 'A',
+        reason: val?.reason
+      };
+    });
 
     try {
       const res = await fetch('/api/attendance/session', {
