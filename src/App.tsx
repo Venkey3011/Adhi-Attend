@@ -580,7 +580,7 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/students?batch=${config.batch}&department=${config.department}`, {
+      const res = await fetch(`/api/students?batch=${config.batch}&department=${encodeURIComponent(config.department)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.status === 401) {
@@ -1210,7 +1210,7 @@ function ManageStudents({ token, user }: { token: string, user: User }) {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/students?batch=${filters.batch}&department=${filters.department}`, {
+      const res = await fetch(`/api/students?batch=${filters.batch}&department=${encodeURIComponent(filters.department)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.status === 401) {
