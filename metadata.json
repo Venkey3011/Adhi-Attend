@@ -1,0 +1,5 @@
+{
+  "name": "Adhi Attend",
+  "description": "A multipurpose attendance management system with bulk student upload, role-based access, and Excel reports.",
+  "requestFramePermissions": []
+}
