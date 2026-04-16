@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": "./",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "allowJs": true,
+    "strict": false
+  },
+  "include": ["server.ts", "src/logo.ts"],
+  "exclude": ["node_modules", "dist", "src/App.tsx", "src/main.tsx", "src/index.css"]
+}
