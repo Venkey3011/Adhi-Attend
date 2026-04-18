@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
-import { LOGO_BASE64 } from "./src/logo";
+import { LOGO_BASE64 } from "./src/logo.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";

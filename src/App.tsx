@@ -61,7 +61,7 @@ interface AttendanceRecord {
 // Constants
 const DEPARTMENTS = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'IT'];
 const FACULTY_DEPARTMENTS = ['CSE', 'IT', 'AI & DS', 'ECE', 'EEE', 'MECH', 'Placement'];
-const STUDENT_DEPARTMENTS = ['CSE', 'IT', 'AI & DS', 'ECE', 'EEE', 'MECH'];
+const STUDENT_DEPARTMENTS = ['CSE', 'IT', 'AI & DS', 'ECE', 'EEE', 'MECH', 'Placement'];
 const AVAILABLE_PERMISSIONS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'markAttendance', label: 'Mark Attendance' },
@@ -2234,12 +2234,15 @@ function ManageStudents({ token, user }: { token: string, user: User }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[#5A5A40] mb-1">Batch</label>
-                    <input name="batch" required className="w-full px-4 py-2 rounded-xl border border-[#5A5A40]/20 outline-none focus:ring-2 focus:ring-[#5A5A40]" placeholder="e.g. 2021" />
+                    <input name="batch" defaultValue={filters.batch} required className="w-full px-4 py-2 rounded-xl border border-[#5A5A40]/20 outline-none focus:ring-2 focus:ring-[#5A5A40]" placeholder="e.g. 2021" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#5A5A40] mb-1">Department</label>
-                    <select name="department" required className="w-full px-4 py-2 rounded-xl border border-[#5A5A40]/20 outline-none focus:ring-2 focus:ring-[#5A5A40]">
+                    <select name="department" defaultValue={filters.department} required className="w-full px-4 py-2 rounded-xl border border-[#5A5A40]/20 outline-none focus:ring-2 focus:ring-[#5A5A40]">
                       <option value="">Select Department</option>
+                      {filters.department && !STUDENT_DEPARTMENTS.includes(filters.department) && (
+                        <option value={filters.department}>{filters.department}</option>
+                      )}
                       {STUDENT_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                   </div>
@@ -2285,6 +2288,9 @@ function ManageStudents({ token, user }: { token: string, user: User }) {
                     <label className="block text-sm font-medium text-[#5A5A40] mb-1">Department</label>
                     <select name="department" defaultValue={editingStudent.department} required className="w-full px-4 py-2 rounded-xl border border-[#5A5A40]/20 outline-none focus:ring-2 focus:ring-[#5A5A40]">
                       <option value="">Select Department</option>
+                      {editingStudent.department && !STUDENT_DEPARTMENTS.includes(editingStudent.department) && (
+                        <option value={editingStudent.department}>{editingStudent.department}</option>
+                      )}
                       {STUDENT_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                   </div>
