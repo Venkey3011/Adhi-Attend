@@ -715,7 +715,7 @@ function ActionButton({ icon, label, sub, onClick }: { icon: React.ReactNode, la
 
 function MarkAttendance({ token, user }: { token: string, user: User }) {
   const [step, setStep] = useState(1);
-  const [config, setConfig] = useState({ batch: '', department: user.department || '', type: '' });
+  const [config, setConfig] = useState({ batch: '', department: (user.department && user.department !== 'Placement') ? user.department : '', type: '' });
   const [customType, setCustomType] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<Record<string, { status: 'P' | 'A' | 'OD', reason?: string }>>({});
@@ -730,7 +730,7 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
   useEffect(() => {
     // If the selected department is not in the filtered departments list, reset it
     // unless the user is a coordinator (who has a fixed department)
-    if (!loadingDepts && config.batch && config.department && !user.department) {
+    if (!loadingDepts && config.batch && config.department && (!user.department || user.department === 'Placement')) {
       if (!departments.includes(config.department)) {
         setConfig(prev => ({ ...prev, department: '' }));
       }
@@ -819,7 +819,7 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
       if (res.ok) {
         alert('Attendance marked successfully!');
         setStep(1);
-        setConfig({ batch: '', department: user.department || '', type: '' });
+        setConfig({ batch: '', department: (user.department && user.department !== 'Placement') ? user.department : '', type: '' });
         setCustomType('');
         setSessionId(null);
       } else {
@@ -900,7 +900,7 @@ function MarkAttendance({ token, user }: { token: string, user: User }) {
                 <select 
                   value={config.department}
                   onChange={e => setConfig({...config, department: e.target.value})}
-                  disabled={!!user.department}
+                  disabled={user.department && user.department !== 'Placement'}
                   className="w-full px-4 py-3 rounded-xl border border-[#5A5A40]/20 outline-none focus:ring-2 focus:ring-[#5A5A40] disabled:opacity-50 disabled:bg-gray-100"
                 >
                   <option value="">Select Dept</option>
@@ -1679,7 +1679,7 @@ function ManageStudents({ token, user }: { token: string, user: User }) {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
-  const [filters, setFilters] = useState({ batch: '', department: user.department || '' });
+  const [filters, setFilters] = useState({ batch: '', department: (user.department && user.department !== 'Placement') ? user.department : '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [bulkFile, setBulkFile] = useState<File | null>(null);
@@ -1688,15 +1688,17 @@ function ManageStudents({ token, user }: { token: string, user: User }) {
   const { batches, refreshBatches } = useBatches(token);
   const { departments, loading: loadingDepts, refreshDepartments } = useDepartments(token, filters.batch);
 
-  const isCoordinator = user.role === 'coordinator';
+  const isCoordinator = user.role === 'coordinator' && user.department !== 'Placement';
 
   useEffect(() => {
-    if (!loadingDepts && filters.batch && filters.department && !user.department) {
+    if (!loadingDepts && filters.batch && filters.department && (!user.department || user.department === 'Placement')) {
       if (!departments.includes(filters.department)) {
         setFilters(prev => ({ ...prev, department: '' }));
       }
     }
   }, [departments, loadingDepts, filters.batch, user.department, filters.department]);
+
+  const userDept = (user.department && user.department !== 'Placement') ? user.department : '';
 
   const fetchStudents = async () => {
     if (!filters.batch || !filters.department) {
@@ -1941,7 +1943,7 @@ function ManageStudents({ token, user }: { token: string, user: User }) {
           <h1 className="text-3xl font-serif font-bold text-[#1a1a1a]">Student Management</h1>
           <div className="flex items-center gap-2 text-sm text-[#5A5A40]/60 mt-1">
             <button 
-              onClick={() => setFilters({ batch: '', department: user.department || '' })}
+              onClick={() => setFilters({ batch: '', department: userDept })}
               className="hover:text-[#5A5A40] transition-colors"
             >
               All Batches
@@ -1950,7 +1952,7 @@ function ManageStudents({ token, user }: { token: string, user: User }) {
               <>
                 <ChevronRight className="w-3 h-3" />
                 <button 
-                  onClick={() => setFilters(prev => ({ ...prev, department: user.department || '' }))}
+                  onClick={() => setFilters(prev => ({ ...prev, department: userDept }))}
                   className="hover:text-[#5A5A40] transition-colors"
                 >
                   {filters.batch}
@@ -2012,7 +2014,7 @@ function ManageStudents({ token, user }: { token: string, user: User }) {
               if (filters.department && !isCoordinator) {
                 setFilters(prev => ({ ...prev, department: '' }));
               } else {
-                setFilters({ batch: '', department: user.department || '' });
+                setFilters({ batch: '', department: userDept });
               }
             }}
             className="p-2 hover:bg-[#5A5A40]/10 rounded-full transition-all text-[#5A5A40]"
@@ -2513,7 +2515,7 @@ function ManageStudents({ token, user }: { token: string, user: User }) {
 }
 
 function Reports({ token, user }: { token: string, user: User }) {
-  const [filters, setFilters] = useState({ startDate: '', endDate: '', batch: '', department: user.department || '', type: '' });
+  const [filters, setFilters] = useState({ startDate: '', endDate: '', batch: '', department: (user.department && user.department !== 'Placement') ? user.department : '', type: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -2524,7 +2526,7 @@ function Reports({ token, user }: { token: string, user: User }) {
   const { departments, loading: loadingDepts } = useDepartments(token, filters.batch);
 
   useEffect(() => {
-    if (!loadingDepts && filters.batch && filters.department && !user.department) {
+    if (!loadingDepts && filters.batch && filters.department && (!user.department || user.department === 'Placement')) {
       if (!departments.includes(filters.department)) {
         setFilters(prev => ({ ...prev, department: '' }));
       }
@@ -2673,7 +2675,7 @@ function Reports({ token, user }: { token: string, user: User }) {
           </div>
           <div className="col-span-1">
             <label className="block text-[10px] font-bold text-[#5A5A40]/40 uppercase mb-1.5">Dept</label>
-            <select value={filters.department} onChange={e => setFilters({...filters, department: e.target.value})} disabled={!!user.department} className="w-full px-3 py-2 text-sm rounded-xl border border-[#5A5A40]/20 outline-none focus:ring-2 focus:ring-[#5A5A40] disabled:opacity-50 disabled:bg-gray-100">
+            <select value={filters.department} onChange={e => setFilters({...filters, department: e.target.value})} disabled={user.department && user.department !== 'Placement'} className="w-full px-3 py-2 text-sm rounded-xl border border-[#5A5A40]/20 outline-none focus:ring-2 focus:ring-[#5A5A40] disabled:opacity-50 disabled:bg-gray-100">
               <option value="">All Depts</option>
               {departments.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
