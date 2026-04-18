@@ -271,7 +271,7 @@ app.get("/api/students/departments", authenticate, async (req, res) => {
     if (batch && batch !== "") {
       filter.batch = batch;
     }
-    if ((req as any).user.role === 'coordinator' && (req as any).user.department) {
+    if ((req as any).user.role === 'coordinator' && (req as any).user.department && (req as any).user.department !== 'Placement') {
       filter.department = (req as any).user.department;
     }
     const departments = await Student.distinct("department", filter);
@@ -288,7 +288,7 @@ app.get("/api/students", authenticate, async (req, res) => {
   if (department) filter.department = department;
   
   // If user is a coordinator with a department, restrict to that department
-  if ((req as any).user.role === 'coordinator' && (req as any).user.department) {
+  if ((req as any).user.role === 'coordinator' && (req as any).user.department && (req as any).user.department !== 'Placement') {
     filter.department = (req as any).user.department;
   }
   
@@ -492,7 +492,7 @@ app.get("/api/attendance/reports", authenticate, hasPermission('reports'), async
   if (type && type !== "") filter.type = type;
 
   // If user is a coordinator with a department, restrict to that department
-  if ((req as any).user.role === 'coordinator' && (req as any).user.department) {
+  if ((req as any).user.role === 'coordinator' && (req as any).user.department && (req as any).user.department !== 'Placement') {
     filter.department = (req as any).user.department;
   }
 
@@ -542,7 +542,7 @@ app.get("/api/attendance/export", authenticate, hasPermission('reports'), async 
   if (type && type !== "") filter.type = type;
 
   // If user is a coordinator with a department, restrict to that department
-  if ((req as any).user.role === 'coordinator' && (req as any).user.department) {
+  if ((req as any).user.role === 'coordinator' && (req as any).user.department && (req as any).user.department !== 'Placement') {
     filter.department = (req as any).user.department;
   }
 
@@ -766,7 +766,7 @@ app.get("/api/stats", authenticate, async (req, res) => {
   try {
     const filter: any = {};
     // If user is a coordinator with a department, restrict to that department
-    if ((req as any).user.role === 'coordinator' && (req as any).user.department) {
+    if ((req as any).user.role === 'coordinator' && (req as any).user.department && (req as any).user.department !== 'Placement') {
       filter.department = (req as any).user.department;
     }
 
@@ -835,7 +835,7 @@ app.get("/api/stats/department", authenticate, async (req, res) => {
     if (department && department !== "") sessionFilter.department = department;
 
     // If user is a coordinator with a department, restrict to that department
-    if ((req as any).user.role === 'coordinator' && (req as any).user.department) {
+    if ((req as any).user.role === 'coordinator' && (req as any).user.department && (req as any).user.department !== 'Placement') {
       sessionFilter.department = (req as any).user.department;
     }
 
@@ -897,7 +897,7 @@ app.get("/api/analytics/daily", authenticate, async (req, res) => {
       nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
       const sessionFilter: any = { date: { $gte: date, $lt: nextDay } };
-      if ((req as any).user.role === 'coordinator' && (req as any).user.department) {
+      if ((req as any).user.role === 'coordinator' && (req as any).user.department && (req as any).user.department !== 'Placement') {
         sessionFilter.department = (req as any).user.department;
       }
 
@@ -931,9 +931,9 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.join(__dirname, "public")));
+    app.use(express.static(path.join(__dirname, "dist")));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "public", "index.html"));
+      res.sendFile(path.join(__dirname, "dist", "index.html"));
     });
   }
 
